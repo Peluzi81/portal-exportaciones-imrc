@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centro de Exportación y Facturación</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- PANTALLA DE ACCESO (LOGIN GATE) -->
+  <div class="auth-gate" id="auth-gate">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-logo auth-logo">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h1>Centro de Facturación</h1>
+        <p>Instructivo de Exportación · IMRC / PPSL</p>
+      </div>
+
+      <div class="auth-alert hidden" id="auth-error"></div>
+
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="login-username">Usuario</label>
+          <input type="text" id="login-username" required autocomplete="username" placeholder="Ej: admin o consulta" autofocus>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Contraseña</label>
+          <div class="password-input-wrap">
+            <input type="password" id="login-password" required autocomplete="current-password" placeholder="Ingresá tu contraseña">
+            <button type="button" class="pwd-eye-btn" id="login-pwd-toggle" title="Mostrar / Ocultar">👁️</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary auth-submit-btn" id="login-submit-btn">
+          Iniciar Sesión
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <span>🔒 Acceso restringido al personal autorizado</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- APLICACIÓN PRINCIPAL (OCULTA HASTA AUTENTICAR) -->
+  <div class="app-shell hidden" id="app-shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M2 12h20"></path>
+            <rect x="4" y="4" width="16" height="16" rx="4" stroke-opacity="0.35"></rect>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title" id="brand-title">Facturación IMRC</span>
+          <span class="brand-sub" id="brand-sub">Instituto Médico Río Cuarto</span>
+        </div>
+        <button class="sidebar-close-btn" id="sidebar-close" title="Cerrar menú">✕</button>
+      </div>
+
+      <!-- SELECTOR DE EMPRESA (AISLAMIENTO TOTAL POR EMPRESA) -->
+      <div class="company-switcher-wrap" id="company-switcher-wrap">
+        <div class="company-switcher-label">EMPRESA ACTIVA</div>
+        <div class="company-switcher" id="company-switcher"></div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item export-only" data-view="tareas">
+          <span class="nav-icon">📥</span>
+          <span class="nav-label">Bandeja de Tareas</span>
+          <span class="nav-badge" id="nav-tareas-badge">0</span>
+        </button>
+        <button class="nav-item facturista-only hidden" data-view="entregar">
+          <span class="nav-icon">📤</span>
+          <span class="nav-label">Entregar Facturación</span>
+          <span class="nav-badge" id="nav-entregar-badge">0</span>
+        </button>
+        <button class="nav-item active export-only" data-view="financiadoras">
+          <span class="nav-icon">🏥</span>
+          <span class="nav-label">Financiadoras</span>
+          <span class="nav-badge" id="nav-count-fin">0</span>
+        </button>
+        <button class="nav-item export-only" data-view="guia">
+          <span class="nav-icon">📘</span>
+          <span class="nav-label">Guía General</span>
+        </button>
+        <button class="nav-item export-only" data-view="seguimiento">
+          <span class="nav-icon">✅</span>
+          <span class="nav-label">Control Mensual</span>
+          <span class="nav-badge nav-badge-accent" id="nav-progress-badge">0</span>
+        </button>
+        <button class="nav-item export-only" data-view="postal">
+          <span class="nav-icon">📦</span>
+          <span class="nav-label">Envíos Andreani</span>
+          <span class="nav-badge" id="nav-postal-badge">0</span>
+        </button>
+        <button class="nav-item export-only" data-view="herramientas">
+          <span class="nav-icon">🛠️</span>
+          <span class="nav-label">Herramientas</span>
+        </button>
+        <button class="nav-item admin-only hidden" data-view="usuarios">
+          <span class="nav-icon">👥</span>
+          <span class="nav-label">Usuarios y Accesos</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-section-header export-only">
+        <span>ACCESO RÁPIDO</span>
+        <span class="sidebar-mini-count" id="sidebar-list-count">0</span>
+      </div>
+      <div class="sidebar-quick-search export-only">
+        <input type="text" id="sidebar-filter-input" placeholder="Ir rápido a financiadora..." autocomplete="off">
+      </div>
+      <div class="sidebar-fin-list export-only" id="sidebar-fin-list"></div>
+
+      <div class="sidebar-footer">
+        <button class="btn-sidebar-action admin-only hidden" id="btn-open-backup">
+          <span>💾</span> Backup de Base de Datos
+        </button>
+      </div>
+    </aside>
+
+    <!-- OVERLAY MOBILE -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle-btn" id="menu-toggle" title="Abrir menú">☰</button>
+          <div class="topbar-company-pill" id="topbar-company-pill" title="Empresa actualmente seleccionada">
+            <span class="company-dot"></span>
+            <span id="topbar-company-sigla">IMRC</span>
+          </div>
+          <div class="global-search-box export-only" id="global-search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="global-search" placeholder="Buscar o preguntar a la IA (Enter)..." autocomplete="off">
+            <button type="button" class="ai-trigger-btn" id="btn-ai-ask" title="Preguntar al Asistente IA exclusivo del portal (Enter)">✨ IA</button>
+            <kbd class="search-kbd">Ctrl K</kbd>
+            <button class="search-clear-btn hidden" id="global-search-clear" title="Limpiar búsqueda">✕</button>
+
+            <!-- PANEL DESPLEGABLE DEL ASISTENTE IA EXCLUSIVO DEL PORTAL -->
+            <div class="ai-popover hidden" id="ai-popover">
+              <div class="ai-popover-header">
+                <div class="ai-popover-title">
+                  <span>✨ Asistente IA del Portal</span>
+                  <span class="badge badge-teal" id="ai-company-badge">IMRC</span>
+                  <span class="badge badge-neutral" id="ai-engine-badge">Local</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <button type="button" class="btn-icon-sm admin-only hidden" id="btn-open-ai-config" title="Configurar Gemini API (opcional)">⚙️</button>
+                  <button type="button" class="btn-icon-sm" id="btn-close-ai-popover" title="Cerrar">✕</button>
+                </div>
+              </div>
+              <div class="ai-popover-body" id="ai-popover-body">
+                <div class="ai-welcome">
+                  <p>Preguntame cualquier cosa <strong>solo sobre este portal</strong>: claves, emails, normativas, vencimientos, totales del Control Mensual, envíos Andreani o Bandeja de Tareas.</p>
+                </div>
+              </div>
+              <div class="ai-suggestions" id="ai-suggestions"></div>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary fin-editor-only hidden" id="btn-new-financiadora">
+            <span>＋</span> Nueva Financiadora
+          </button>
+
+          <div class="user-pill" id="user-pill">
+            <div class="user-pill-info">
+              <span class="user-pill-name" id="current-user-name">—</span>
+              <span class="badge badge-teal" id="current-user-role">—</span>
+            </div>
+            <button class="btn-icon-sm" id="btn-my-password" title="Cambiar mi contraseña">🔑</button>
+            <button class="btn-icon-sm" id="btn-logout" title="Cerrar sesión">🚪</button>
+          </div>
+
+          <button class="btn-icon" id="btn-theme-toggle" title="Cambiar tema claro/oscuro">🌙</button>
+        </div>
+      </header>
+
+      <main class="main-content" id="main-content">
+        <!-- AVISO CAMBIO DE CONTRASEÑA INICIAL -->
+        <div class="security-banner hidden" id="pwd-change-banner">
+          <div>
+            <strong>🔐 Seguridad de cuenta:</strong> Estás usando una contraseña inicial o restablecida. Te recomendamos cambiarla por una clave personal.
+          </div>
+          <button class="btn btn-sm btn-primary" id="btn-banner-change-pwd">Cambiar contraseña ahora</button>
+        </div>
+
+        <!-- ALERTA EN VIVO DE ENTREGAS PENDIENTES (PARA EXPORTACION) -->
+        <div class="entregas-alert-banner hidden" id="tareas-live-banner">
+          <div id="tareas-live-banner-text"></div>
+          <button class="btn btn-sm btn-primary" id="btn-banner-go-tareas">📥 Ir a Bandeja de Tareas →</button>
+        </div>
+
+        <!-- VIEW 0A: BANDEJA DE TAREAS (EXPORTACION: ADMIN / CONSULTA) -->
+        <section class="view" id="view-tareas">
+          <div class="page-header">
+            <div>
+              <h1 id="tareas-header-title">Bandeja de Tareas — Entregas de Facturación</h1>
+              <p>Facturaciones informadas por los facturistas con su documentación requerida lista para despachar y sumar al Control Mensual.</p>
+            </div>
+            <div class="page-header-actions">
+              <button class="btn btn-secondary" id="btn-refresh-tareas">↻ Actualizar</button>
+              <button class="btn btn-primary" id="btn-new-entrega-manual">＋ Cargar Entrega Manual</button>
+            </div>
+          </div>
+          <div id="tareas-content"></div>
+        </section>
+
+        <!-- VIEW 0B: AREA EXCLUSIVA DE FACTURISTAS -->
+        <section class="view" id="view-entregar">
+          <div class="page-header">
+            <div>
+              <h1 id="entregar-header-title">Entregar Facturación a Exportaciones</h1>
+              <p>Informá de forma ordenada cada facturación lista para enviar indicando Financiadora, Ambulatorio/Internado y Período.</p>
+            </div>
+            <div class="page-header-actions">
+              <button class="btn btn-secondary" id="btn-refresh-mis-entregas">↻ Actualizar Estados</button>
+            </div>
+          </div>
+          <div id="entregar-content"></div>
+        </section>
+
+        <!-- VIEW 1: FINANCIADORAS -->
+        <section class="view active" id="view-financiadoras">
+          <div id="fin-directory-panel">
+            <div class="hero-strip">
+              <div>
+                <h1 id="hero-dir-title">Directorio de Financiadoras</h1>
+                <p id="hero-dir-sub">Consultá instructivos, credenciales, casillas de correo y requisitos de exportación con utilidades de 1 clic.</p>
+              </div>
+              <div class="hero-quick-paths" id="hero-quick-paths"></div>
+            </div>
+
+            <div class="kpi-grid" id="kpi-grid"></div>
+
+            <div class="filter-bar">
+              <div class="filter-group" id="category-filters">
+                <button class="chip active" data-cat="all">Todas</button>
+                <button class="chip" data-cat="obra_social">Obras Sociales / Prepagas</button>
+                <button class="chip" data-cat="directa">Directas Digitales</button>
+                <button class="chip" data-cat="art">ART y Seguros</button>
+                <button class="chip" data-cat="colegio_medico">Colegio Médico</button>
+              </div>
+              <div class="filter-group-secondary" id="channel-filters">
+                <button class="chip-sm" data-channel="favoritos">⭐ Favoritas</button>
+                <button class="chip-sm" data-channel="portal">🌐 Portal Web</button>
+                <button class="chip-sm" data-channel="email">✉️ Email</button>
+                <button class="chip-sm" data-channel="drive">☁️ Drive</button>
+                <button class="chip-sm" data-channel="txt">📄 TXT (Exp. Fact.)</button>
+                <button class="chip-sm" data-channel="fisico">📦 Envío Físico</button>
+                <button class="chip-sm" data-channel="vencimiento">⏰ Con Vencimiento</button>
+              </div>
+            </div>
+
+            <div class="results-meta">
+              <span id="results-count-label">Mostrando financiadoras</span>
+              <div class="results-meta-right">
+                <label class="sep-toggle" title="Separador usado al copiar múltiples correos">
+                  <span>Separador de mails:</span>
+                  <select id="email-separator-select">
+                    <option value="; ">Punto y coma (Outlook)</option>
+                    <option value=", ">Coma (Gmail)</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="fin-grid" id="fin-grid"></div>
+          </div>
+
+          <div id="fin-detail-panel" class="hidden"></div>
+        </section>
+
+        <!-- VIEW 2: GUIA GENERAL -->
+        <section class="view" id="view-guia">
+          <div class="page-header">
+            <div>
+              <h1 id="guia-header-title">Guía General de Exportación</h1>
+              <p id="guia-header-sub">Procedimiento estándar y controles clave para la empresa seleccionada.</p>
+            </div>
+          </div>
+          <div id="guia-content"></div>
+        </section>
+
+        <!-- VIEW 3: SEGUIMIENTO MENSUAL (PLANILLA DE ENVIOS Y MONTOS) -->
+        <section class="view" id="view-seguimiento">
+          <div class="page-header">
+            <div>
+              <h1>Control Mensual de Envíos y Montos</h1>
+              <p>Registrá fechas de envío, montos (Ambulatorio / Internado), refacturaciones y diferencias de arancel por período.</p>
+            </div>
+            <div class="page-header-actions">
+              <div class="period-selector">
+                <label for="tracker-period">Período:</label>
+                <input type="month" id="tracker-period">
+              </div>
+              <button class="btn btn-primary" id="btn-new-envio">＋ Registrar Envío</button>
+              <button class="btn btn-secondary" id="btn-import-envios-excel">⬆ Importar Excel (.xls/.xlsx)</button>
+              <button class="btn btn-secondary" id="btn-export-tracker-csv">⬇ Exportar Excel (CSV)</button>
+            </div>
+          </div>
+          <div id="seguimiento-content"></div>
+        </section>
+
+        <!-- VIEW 3B: SEGUIMIENTO POSTAL (ANDREANI) -->
+        <section class="view" id="view-postal">
+          <div class="page-header">
+            <div>
+              <h1>Seguimiento de Correo Postal (Andreani)</h1>
+              <p>Control de envíos físicos, números de seguimiento con rastreo directo y fechas de entrega.</p>
+            </div>
+            <div class="page-header-actions">
+              <select id="postal-period-filter" class="select-styled" style="padding:8px 12px;font-weight:600;"></select>
+              <button class="btn btn-primary" id="btn-new-postal">＋ Nuevo Envío Postal</button>
+              <button class="btn btn-secondary" id="btn-import-postal-excel">⬆ Importar Excel (.xls/.xlsx)</button>
+              <button class="btn btn-secondary" id="btn-export-postal-csv">⬇ Exportar Excel (CSV)</button>
+            </div>
+          </div>
+          <div id="postal-content"></div>
+        </section>
+
+        <!-- VIEW 4: HERRAMIENTAS -->
+        <section class="view" id="view-herramientas">
+          <div class="page-header">
+            <div>
+              <h1>Herramientas Operativas de Facturación</h1>
+              <p>Utilidades prácticas para evitar errores de formato, unificar archivos .TXT y copiar datos frecuentes al instante.</p>
+            </div>
+          </div>
+
+          <div class="tools-layout">
+            <div class="tool-panel">
+              <div class="tool-panel-header">
+                <div>
+                  <h3 id="tools-inst-title">Ficha Rápida Institucional</h3>
+                  <p>Hacé clic en cualquier dato para copiarlo al portapapeles.</p>
+                </div>
+              </div>
+              <div class="quick-data-grid" id="institution-quick-grid"></div>
+            </div>
+
+            <div class="tool-panel">
+              <div class="tool-panel-header">
+                <div>
+                  <h3>Asistente de Nomenclatura de Archivos y Asuntos</h3>
+                  <p>Elegí la financiadora y generá el nombre de archivo o asunto exacto sin errores de ceros ni formatos.</p>
+                </div>
+                <select id="tool-generator-select" class="select-styled"></select>
+              </div>
+              <div id="tool-generator-container"></div>
+            </div>
+
+            <div id="tool-txt-merger"></div>
+          </div>
+        </section>
+
+        <!-- VIEW 5: USUARIOS Y ACCESOS (SOLO ADMIN) -->
+        <section class="view" id="view-usuarios">
+          <div class="page-header">
+            <div>
+              <h1>Usuarios, Roles y Registro de Actividad</h1>
+              <p>Administrá quién puede ingresar al sistema y quién tiene permisos para modificar financiadoras.</p>
+            </div>
+            <div class="page-header-actions">
+              <button class="btn btn-primary" id="btn-new-user">＋ Nuevo Usuario</button>
+            </div>
+          </div>
+          <div id="usuarios-content"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR / EDITAR FINANCIADORA -->
+  <div class="modal-backdrop hidden" id="modal-fin">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2 id="modal-fin-title">Nueva Financiadora</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-fin">✕</button>
+      </div>
+      <form id="form-financiadora" class="modal-body">
+        <input type="hidden" id="f-id">
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label for="f-codigo">Cód. Geclisa (os_cod)</label>
+            <input type="text" id="f-codigo" placeholder="Ej: 1524">
+          </div>
+          <div class="form-group">
+            <label for="f-nombre">Nombre de la Financiadora *</label>
+            <input type="text" id="f-nombre" required placeholder="Ej: APROSS, DASPU, PREVENCION...">
+          </div>
+          <div class="form-group">
+            <label for="f-categoria">Categoría *</label>
+            <select id="f-categoria" required>
+              <option value="obra_social">Obra Social / Prepaga</option>
+              <option value="directa">Directa con Exportación Digital</option>
+              <option value="art">ART / Seguro</option>
+              <option value="colegio_medico">Colegio Médico</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Canales / Modalidades de Envío</label>
+          <div class="checkbox-pills" id="f-canales-group">
+            <label class="check-pill"><input type="checkbox" value="portal"> 🌐 Portal Web</label>
+            <label class="check-pill"><input type="checkbox" value="email"> ✉️ Email</label>
+            <label class="check-pill"><input type="checkbox" value="drive"> ☁️ Google Drive</label>
+            <label class="check-pill"><input type="checkbox" value="txt"> 📄 Archivo TXT (Exp. Fact.)</label>
+            <label class="check-pill"><input type="checkbox" value="fisico"> 📦 Envío Físico</label>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="f-ambulatorio">Modalidad Ambulatorio</label>
+            <input type="text" id="f-ambulatorio" placeholder="Ej: Portal Web + Envío Físico">
+          </div>
+          <div class="form-group">
+            <label for="f-internado">Modalidad Internado</label>
+            <input type="text" id="f-internado" placeholder="Ej: 100% Digital + Link Drive HC">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="f-vencimiento">Fecha tope / Vencimiento (opcional)</label>
+            <input type="text" id="f-vencimiento" placeholder="Ej: Del 1 al 10 de cada mes">
+          </div>
+          <div class="form-group">
+            <label for="f-asunto">Regla de Asunto o Nomenclatura (opcional)</label>
+            <input type="text" id="f-asunto" placeholder="Ej: CUIT 30546011980 factura 10-XXXXX">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="f-archivos">Archivos requeridos (separados por coma)</label>
+          <input type="text" id="f-archivos" placeholder="Ej: Factura PDF, Detalle XLS, HC PDF, Exp. Fact. TXT">
+        </div>
+
+        <div class="dynamic-section">
+          <div class="dynamic-header">
+            <label>Portales Web</label>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-add-portal">＋ Agregar Portal</button>
+          </div>
+          <div id="f-portales-list" class="dynamic-list"></div>
+        </div>
+
+        <div class="dynamic-section">
+          <div class="dynamic-header">
+            <label>Credenciales de Acceso</label>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-add-cred">＋ Agregar Credencial</button>
+          </div>
+          <div id="f-creds-list" class="dynamic-list"></div>
+        </div>
+
+        <div class="dynamic-section">
+          <div class="dynamic-header">
+            <label>Casillas de Correo Electrónico</label>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-add-email">＋ Agregar Email</button>
+          </div>
+          <div id="f-emails-list" class="dynamic-list"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="f-instrucciones">Instrucciones detalladas paso a paso *</label>
+          <textarea id="f-instrucciones" rows="5" required placeholder="Describí cómo exportar desde Geclisa, dónde subir o enviar cada documento, particularidades de ambulatorio e internado..."></textarea>
+        </div>
+
+        <div class="dynamic-section">
+          <div class="dynamic-header">
+            <label>Capturas de Pantalla / Imágenes de Referencia</label>
+            <label class="btn btn-sm btn-secondary" style="cursor:pointer;">
+              📷 Subir Imagen
+              <input type="file" id="f-image-upload" accept="image/*" multiple hidden>
+            </label>
+          </div>
+          <div id="f-images-list" class="form-images-preview"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-close" data-close="modal-fin">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar en Servidor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR / EDITAR ENVIO MENSUAL DE FACTURACION -->
+  <div class="modal-backdrop hidden" id="modal-envio">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-envio-title">Registrar Envío de Facturación</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-envio">✕</button>
+      </div>
+      <form id="form-envio" class="modal-body">
+        <input type="hidden" id="ev-id">
+        <input type="hidden" id="ev-fin-id">
+
+        <div class="pdf-upload-bar">
+          <label class="pdf-upload-label" id="ev-pdf-drop">
+            <input type="file" id="ev-pdf-input" accept=".pdf,application/pdf" hidden>
+            <span>📄 <strong>Leer PDF de Geclisa</strong> (autocompleta obra social, período, facturas y monto)</span>
+          </label>
+          <div id="ev-pdf-preview" class="hidden"></div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="ev-period">Período Facturado *</label>
+            <input type="month" id="ev-period" required>
+          </div>
+          <div class="form-group">
+            <label for="ev-grupo">Sección / Grupo *</label>
+            <select id="ev-grupo" required>
+              <option value="directas">DIRECTAS / Obras Sociales</option>
+              <option value="art">ART y Seguros</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="ev-nombre">Financiadora *</label>
+            <input type="text" id="ev-nombre" list="dl-financiadoras" required placeholder="Elegí o escribí nombre...">
+            <datalist id="dl-financiadoras"></datalist>
+          </div>
+          <div class="form-group">
+            <label for="ev-cod">Código Geclisa (os_cod)</label>
+            <input type="text" id="ev-cod" placeholder="Ej: 1524">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="ev-area">Área *</label>
+            <select id="ev-area" required>
+              <option value="ambulatorio">Ambulatorio</option>
+              <option value="internado">Internado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ev-tipo">Tipo de Facturación *</label>
+            <select id="ev-tipo" required>
+              <option value="normal">Facturación Normal</option>
+              <option value="refacturacion">Refacturación</option>
+              <option value="diferencia_arancel">Diferencia de Arancel</option>
+              <option value="preliquidacion">Preliquidación</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="ev-fecha">Fecha de Envío</label>
+            <input type="date" id="ev-fecha">
+          </div>
+          <div class="form-group">
+            <label for="ev-importe">Importe Enviado ($)</label>
+            <input type="text" id="ev-importe" placeholder="Ej: 12450320,50">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="ev-etiqueta">Etiqueta / Subtipo (opcional)</label>
+            <input type="text" id="ev-etiqueta" placeholder="Ej: 1ra quincena, art, ap, LBY, mail, Urocardio">
+          </div>
+          <div class="form-group">
+            <label for="ev-obs">Observación (opcional)</label>
+            <input type="text" id="ev-obs" placeholder="N° factura o nota breve...">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-envio" style="margin-right:auto;">🗑️ Eliminar</button>
+          <button type="button" class="btn btn-ghost modal-close" data-close="modal-envio">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Envío</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR / EDITAR ENVIO POSTAL (ANDREANI) -->
+  <div class="modal-backdrop hidden" id="modal-postal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-postal-title">Nuevo Envío Postal (Andreani)</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-postal">✕</button>
+      </div>
+      <form id="form-postal" class="modal-body">
+        <input type="hidden" id="pos-id">
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="pos-period">Mes / Período *</label>
+            <input type="month" id="pos-period" required>
+          </div>
+          <div class="form-group">
+            <label for="pos-fecha">Fecha de Despacho *</label>
+            <input type="date" id="pos-fecha" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="pos-obra">Obra Social *</label>
+          <input type="text" id="pos-obra" list="dl-postal-obras" required placeholder="Ej: CAJA DE ABOGADOS, MEDICUS, COMFYE...">
+          <datalist id="dl-postal-obras"></datalist>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="pos-medio">Medio de Envío *</label>
+            <input type="text" id="pos-medio" list="dl-medios" required value="ANDREANI">
+            <datalist id="dl-medios">
+              <option value="ANDREANI">
+              <option value="ANDREANI reenvio">
+              <option value="Correo Argentino">
+              <option value="Comisionista (Marisa)">
+              <option value="Entrega Personal">
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label for="pos-seg">N° de Seguimiento</label>
+            <input type="text" id="pos-seg" placeholder="Ej: B41844911">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="pos-entrega">Fecha de Entrega (vacío si está en tránsito)</label>
+            <input type="date" id="pos-entrega">
+          </div>
+          <div class="form-group">
+            <label for="pos-obs">Observaciones</label>
+            <input type="text" id="pos-obs" placeholder="Ej: Corte de servicio, reenvío...">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-postal" style="margin-right:auto;">🗑️ Eliminar</button>
+          <button type="button" class="btn btn-ghost modal-close" data-close="modal-postal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Envío Postal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: IMPORTAR PLANILLAS EXCEL (.XLS / .XLSX) -->
+  <div class="modal-backdrop hidden" id="modal-import-excel">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2 id="modal-import-title">Importar Planillas Excel (.xls / .xlsx)</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-import-excel">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="info-callout" id="import-excel-hint"></div>
+
+        <label class="dropzone" id="excel-dropzone">
+          <input type="file" id="excel-file-input" accept=".xls,.xlsx" multiple hidden>
+          <div class="dropzone-icon">📊</div>
+          <div class="dropzone-text">
+            <strong>Hacé clic para elegir una o varias planillas Excel</strong> o arrastralas acá
+          </div>
+          <span class="dropzone-hint">Admite archivos .xls y .xlsx de meses anteriores (podés seleccionar varios meses a la vez)</span>
+        </label>
+
+        <div id="import-excel-options" class="hidden">
+          <label class="checkbox-label" id="import-replace-wrap">
+            <input type="checkbox" id="import-replace-existing" checked>
+            Reemplazar datos del mismo período si ya estaba cargado (evita duplicados)
+          </label>
+        </div>
+
+        <div id="import-excel-preview"></div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-close" data-close="modal-import-excel">Cancelar</button>
+          <button type="button" class="btn btn-primary hidden" id="btn-confirm-import-excel">✓ Confirmar e Importar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR / EDITAR USUARIO (ADMIN) -->
+  <div class="modal-backdrop hidden" id="modal-user">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-user-title">Nuevo Usuario</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-user">✕</button>
+      </div>
+      <form id="form-user" class="modal-body">
+        <input type="hidden" id="u-id">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="u-username">Usuario de ingreso *</label>
+            <input type="text" id="u-username" required placeholder="Ej: mperez" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="u-role">Rol / Permisos *</label>
+            <select id="u-role" required>
+              <option value="exportacion">Sector Exportaciones (Operación completa + editar financiadoras)</option>
+              <option value="facturista">Facturista (Solo cargar entregas de facturación)</option>
+              <option value="consulta">Consulta (Solo lectura de financiadoras + control mensual)</option>
+              <option value="admin">Administrador (Control total, usuarios y backups)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="u-fullname">Nombre y Apellido *</label>
+          <input type="text" id="u-fullname" required placeholder="Ej: María Pérez">
+        </div>
+        <div class="form-group">
+          <label for="u-password" id="u-password-label">Contraseña inicial * (mínimo 6 caracteres)</label>
+          <input type="password" id="u-password" placeholder="••••••••" autocomplete="new-password">
+        </div>
+        <div class="form-group" id="u-companies-wrap">
+          <label>Empresas habilitadas</label>
+          <div class="checkbox-pills" id="u-companies-group"></div>
+          <small style="color:var(--text-muted);font-size:11.5px;">Los Administradores tienen acceso automático a todas las empresas.</small>
+        </div>
+        <div class="form-group hidden" id="u-active-wrap">
+          <label class="checkbox-label">
+            <input type="checkbox" id="u-active" checked>
+            Cuenta activa (puede iniciar sesión)
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-close" data-close="modal-user">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CAMBIAR MI CONTRASEÑA -->
+  <div class="modal-backdrop hidden" id="modal-my-password">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Cambiar mi contraseña</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-my-password">✕</button>
+      </div>
+      <form id="form-my-password" class="modal-body">
+        <div class="form-group">
+          <label for="mp-current">Contraseña actual *</label>
+          <input type="password" id="mp-current" required autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label for="mp-new">Nueva contraseña * (mínimo 6 caracteres)</label>
+          <input type="password" id="mp-new" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label for="mp-confirm">Confirmar nueva contraseña *</label>
+          <input type="password" id="mp-confirm" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-close" data-close="modal-my-password">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Actualizar contraseña</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: BACKUP DE BASE DE DATOS (ADMIN) -->
+  <div class="modal-backdrop hidden" id="modal-backup">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Backup de Base de Datos</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-backup">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="info-callout">
+          <strong>Guardado centralizado en la nube (Supabase)</strong>
+          <p>Todos los cambios se guardan en tiempo real en la base de datos segura en la nube y son visibles al instante para todo el personal autenticado.</p>
+        </div>
+
+        <div class="backup-actions-grid">
+          <div class="backup-card">
+            <h4>💾 Copia de Seguridad — <span id="backup-company-label">IMRC</span> (JSON)</h4>
+            <p>Descargá una copia de seguridad de las financiadoras y del control mensual de la empresa activa, o restaurá un archivo JSON previo de esta misma empresa.</p>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="btn-export-json">⬇ Descargar Backup JSON</button>
+              <label class="btn btn-secondary" style="cursor:pointer;">
+                ⬆ Importar JSON al Servidor
+                <input type="file" id="input-import-json" accept=".json" hidden>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: COMPLETAR TAREA Y REGISTRAR EN CONTROL MENSUAL -->
+  <div class="modal-backdrop hidden" id="modal-completar-entrega">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-comp-title">Finalizar Envío y Cargar al Control Mensual</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-completar-entrega">✕</button>
+      </div>
+      <form id="form-completar-entrega" class="modal-body">
+        <input type="hidden" id="ce-id">
+        <div class="info-callout" id="ce-summary-callout"></div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="ce-fecha">Fecha de Envío *</label>
+            <input type="date" id="ce-fecha" required>
+          </div>
+          <div class="form-group">
+            <label for="ce-importe">Importe Enviado ($)</label>
+            <input type="text" id="ce-importe" placeholder="Ej: 12450320,50">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="ce-tipo">Tipo de Facturación</label>
+            <select id="ce-tipo">
+              <option value="normal">Facturación Normal</option>
+              <option value="refacturacion">Refacturación</option>
+              <option value="diferencia_arancel">Diferencia de Arancel</option>
+              <option value="preliquidacion">Preliquidación</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ce-etiqueta">Condición / Etiqueta (ej. Exento, Gravado)</label>
+            <input type="text" id="ce-etiqueta" placeholder="Ej: Exento, 1ra quincena...">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ce-obs">Observación para el Control Mensual (opcional)</label>
+          <input type="text" id="ce-obs" placeholder="N° factura o nota breve...">
+        </div>
+
+        <div class="form-group">
+          <label for="ce-respuesta">Mensaje para el facturista (opcional)</label>
+          <input type="text" id="ce-respuesta" placeholder="Ej: Enviado por portal / mail correctamente">
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="ce-add-control" checked>
+            Agregar automáticamente a la planilla de Control Mensual de Envíos y Montos
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-close" data-close="modal-completar-entrega">Cancelar</button>
+          <button type="submit" class="btn btn-primary">✅ Confirmar Envío</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: OBSERVAR / DEVOLVER ENTREGA AL FACTURISTA -->
+  <div class="modal-backdrop hidden" id="modal-observar-entrega">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-obs-title">Observar / Devolver Entrega</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-observar-entrega">✕</button>
+      </div>
+      <form id="form-observar-entrega" class="modal-body">
+        <input type="hidden" id="oe-id">
+        <div class="form-group">
+          <label for="oe-motivo">Motivo / Qué falta corregir *</label>
+          <textarea id="oe-motivo" rows="3" required placeholder="Ej: Falta adjuntar historia clínica en J:\escaner o revisar el período..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-close" data-close="modal-observar-entrega">Cancelar</button>
+          <button type="submit" class="btn btn-primary">⚠️ Devolver al Facturista</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CARGAR ENTREGA MANUAL (DESDE EXPORTACIONES) -->
+  <div class="modal-backdrop hidden" id="modal-nueva-entrega">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Cargar Entrega a la Bandeja de Tareas</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-nueva-entrega">✕</button>
+      </div>
+      <form id="form-nueva-entrega-modal" class="modal-body">
+        <div class="pdf-upload-bar">
+          <label class="pdf-upload-label" id="ne-pdf-drop">
+            <input type="file" id="ne-pdf-input" accept=".pdf,application/pdf" hidden>
+            <span>📄 <strong>Subir PDF de Geclisa</strong> (autocompleta obra social, área, período, facturas y monto)</span>
+          </label>
+          <div id="ne-pdf-preview" class="hidden"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="ne-fin">Financiadora *</label>
+          <input type="text" id="ne-fin" list="dl-financiadoras" required placeholder="Elegí financiadora...">
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="ne-area">Área *</label>
+            <select id="ne-area" required>
+              <option value="ambulatorio">Ambulatorio</option>
+              <option value="internado">Internado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ne-period">Período *</label>
+            <input type="month" id="ne-period" required>
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="ne-condicion">Condición / Etiqueta</label>
+            <input type="text" id="ne-condicion" list="dl-condiciones" placeholder="Ej: Exento, Gravado, 1ra Quincena">
+          </div>
+          <div class="form-group">
+            <label for="ne-tipo">Tipo</label>
+            <select id="ne-tipo">
+              <option value="normal">Normal</option>
+              <option value="refacturacion">Refacturación</option>
+              <option value="diferencia_arancel">Diferencia de Arancel</option>
+              <option value="preliquidacion">Preliquidación</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="ne-importe">Importe ($) (opcional)</label>
+            <input type="text" id="ne-importe" placeholder="Ej: 1500000,00">
+          </div>
+          <div class="form-group">
+            <label for="ne-obs">Observación / N° Factura (opcional)</label>
+            <input type="text" id="ne-obs" placeholder="N° factura o detalle...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-close" data-close="modal-nueva-entrega">Cancelar</button>
+          <button type="submit" class="btn btn-primary">📥 Agregar a Bandeja</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <datalist id="dl-condiciones">
+    <option value="Exento">
+    <option value="Gravado">
+    <option value="Gravado y Exento">
+    <option value="1ra Quincena">
+    <option value="2da Quincena">
+  </datalist>
+
+  <!-- MODAL: CONFIGURACION OPCIONAL DE GEMINI IA (ADMIN) -->
+  <div class="modal-backdrop hidden" id="modal-ai-config">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⚙️ Configuración del Asistente IA</h2>
+        <button class="btn-icon-sm modal-close" data-close="modal-ai-config">✕</button>
+      </div>
+      <form id="form-ai-config" class="modal-body">
+        <div class="info-callout">
+          <strong>Modo local inteligente activo por defecto</strong>
+          <p>El asistente ya responde en vivo sin necesidad de clave externa y sin sacar datos de la red interna. Opcionalmente, podés cargar una <strong>Gemini API Key</strong> para respuestas generativas ampliadas (las contraseñas de portales nunca se envían fuera del servidor).</p>
+        </div>
+        <div id="ai-config-status" style="margin-bottom:12px;font-size:13px;"></div>
+        <div class="form-group">
+          <label for="ai-gemini-key">Gemini API Key (dejar vacío para usar solo modo local)</label>
+          <input type="password" id="ai-gemini-key" placeholder="AIza..." autocomplete="off">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-clear-ai-key" style="margin-right:auto;">Quitar clave</button>
+          <button type="button" class="btn btn-ghost modal-close" data-close="modal-ai-config">Cerrar</button>
+          <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX DE IMAGENES -->
+  <div class="lightbox hidden" id="lightbox">
+    <button class="lightbox-close" id="lightbox-close" title="Cerrar (Esc)">✕</button>
+    <button class="lightbox-nav lightbox-prev" id="lightbox-prev" title="Anterior">‹</button>
+    <div class="lightbox-content">
+      <img id="lightbox-img" src="" alt="Captura de pantalla">
+      <div class="lightbox-caption" id="lightbox-caption"></div>
+    </div>
+    <button class="lightbox-nav lightbox-next" id="lightbox-next" title="Siguiente">›</button>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="js/tools.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
