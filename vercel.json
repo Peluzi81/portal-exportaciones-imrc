@@ -2,11 +2,11 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 30,
-      "includeFiles": "api/assets_img/**"
+      "includeFiles": "api/**"
     }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.py" },
-    { "source": "/assets/img/(.*)", "destination": "/api/index.py" }
+    { "source": "/api/:path*", "destination": "/api/index?_vpath=/api/:path*" },
+    { "source": "/assets/img/:path*", "destination": "/api/index?_vpath=/assets/img/:path*" }
   ]
 }
