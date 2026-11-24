@@ -33,11 +33,19 @@ class SupabaseClient:
                 "Faltan configurar SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en las variables de entorno de Vercel.",
             )
 
-    def _rest_headers(self, extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    def _auth_headers(self) -> Dict[str, str]:
         self.ensure_configured()
-        h = {
+        # Soporta tanto las nuevas claves Secret (sb_secret_...) como las legacy JWT service_role (eyJ...)
+        if self.service_key.startswith("sb_secret_"):
+            return {"apikey": self.service_key}
+        return {
             "apikey": self.service_key,
             "Authorization": f"Bearer {self.service_key}",
+        }
+
+    def _rest_headers(self, extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+        h = {
+            **self._auth_headers(),
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
@@ -207,8 +215,7 @@ class SupabaseClient:
         safe_path = urllib.parse.quote(object_path.lstrip("/"), safe="/")
         url = f"{self.url}/storage/v1/object/{bucket}/{safe_path}"
         headers = {
-            "apikey": self.service_key,
-            "Authorization": f"Bearer {self.service_key}",
+            **self._auth_headers(),
             "Content-Type": content_type,
             "x-upsert": "true",
         }
@@ -219,10 +226,7 @@ class SupabaseClient:
         self.ensure_configured()
         safe_path = urllib.parse.quote(object_path.lstrip("/"), safe="/")
         url = f"{self.url}/storage/v1/object/{bucket}/{safe_path}"
-        headers = {
-            "apikey": self.service_key,
-            "Authorization": f"Bearer {self.service_key}",
-        }
+        headers = self._auth_headers()
         resp = self.session.get(url, headers=headers, timeout=self.timeout)
         if resp.status_code in (400, 404):
             return None, ""

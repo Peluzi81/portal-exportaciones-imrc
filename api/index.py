@@ -23,6 +23,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
@@ -1751,8 +1752,46 @@ routes = [
     Route("/api/backup/import", ep_import_backup, methods=["POST"]),
 ]
 
+class VercelPathRestoreMiddleware:
+    """Restaura scope['path'] cuando Vercel reescribe /api/:path* hacia /api/index?_vpath=..."""
+
+    def __init__(self, asgi_app):
+        self.asgi_app = asgi_app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http":
+            raw_qs = scope.get("query_string", b"").decode("latin-1")
+            path = scope.get("path", "")
+            if "_vpath=" in raw_qs:
+                pairs = urllib.parse.parse_qsl(raw_qs, keep_blank_values=True)
+                vpath = ""
+                kept = []
+                for k, v in pairs:
+                    if k == "_vpath" and not vpath:
+                        vpath = v
+                    else:
+                        kept.append((k, v))
+                if vpath:
+                    if not vpath.startswith("/"):
+                        vpath = "/" + vpath
+                    scope = dict(scope)
+                    scope["path"] = vpath
+                    scope["raw_path"] = vpath.encode("utf-8")
+                    scope["query_string"] = urllib.parse.urlencode(kept).encode("latin-1")
+            elif path in ("/api/index", "/api/index.py"):
+                hdrs = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope.get("headers", [])}
+                orig = hdrs.get("x-forwarded-uri") or hdrs.get("x-original-url") or hdrs.get("x-invoke-path") or ""
+                if orig and orig not in ("/api/index", "/api/index.py"):
+                    p_only = orig.split("?", 1)[0]
+                    scope = dict(scope)
+                    scope["path"] = p_only
+                    scope["raw_path"] = p_only.encode("utf-8")
+        await self.asgi_app(scope, receive, send)
+
+
 app = Starlette(
     debug=False,
     routes=routes,
+    middleware=[Middleware(VercelPathRestoreMiddleware)],
     exception_handlers={SupabaseError: handle_supabase_error},
 )
